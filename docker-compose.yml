@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:11.6-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./data/:/var/lib/postgresql/data/
+
+  server:
+    build: .
+    env_file:
+      - $ENV
+    ports:
+      - "80:80"
+    volumes:
+      - .:/app
+    command: >
+      bash -c "sleep 5 && cd /app
+      && python apps/manage.py migrate
+      && python apps/manage.py collectstatic --no-input
+      && gunicorn --reload -c gunicorn_config.py apps.wizardy.wsgi"
+    depends_on:
+      - db
+
